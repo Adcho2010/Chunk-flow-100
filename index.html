@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Chunk-Flow 100 (v3.1)</title>
+  <title>Chunk-Flow 100 (v3.2)</title>
   <style>
     :root {
       --bg: #121212; --card: #1e1e1e; --primary: #4f46e5;
@@ -26,12 +26,9 @@
     .nav-title { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
     
     .video-wrap {
-      width: 100%; height: 260px; border-radius: 12px; overflow: hidden;
-      background: #000; margin-bottom: 16px; position: relative;
+      width: 100%; min-height: 250px; border-radius: 12px; overflow: hidden;
+      background: #000; margin-bottom: 16px; display: flex; justify-content: center;
     }
-    /* YouGlish 위젯 래퍼 (반드시 id="widget-container" 로 감싸야 안정적입니다) */
-    #widget-container { width: 100%; height: 100%; }
-
     .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
     .btn-secondary {
       flex: 1; background: #3f3f46; color: white; border: none;
@@ -64,10 +61,8 @@
   </div>
 
   <div class="video-wrap">
-    <div id="widget-container">
-      <!-- 이 안에 YouGlish 위젯이 들어갑니다 -->
-      <div id="yg-widget-0"></div>
-    </div>
+    <!-- ID를 변경하여 YouGlish 스크립트 충돌을 방지합니다 -->
+    <div id="youglish-widget"></div>
   </div>
 
   <div class="action-row">
@@ -95,7 +90,6 @@
     <span style="font-size: 0.85rem; color: #c7d2fe;">한 번 말하고 누르면 영상을 다시 틀어줍니다</span>
   </button>
 
-  <!-- YouGlish 스크립트 강제 비동기 로드 -->
   <script>
     const chunkDB = [
       { id: 1, query: "I just wanna", trans: "나 그냥 ~하고 싶어" },
@@ -106,48 +100,19 @@
     ];
 
     let currentIndex = 0;
-    let widget = null;
-    let widgetReady = false;
+    let widget;
 
-    // 페이지가 완전히 뜬 다음 YouGlish 스크립트를 가져와서 에러를 줄입니다.
-    window.onload = function() {
-      let script = document.createElement("script");
-      script.src = "https://youglish.com/public/emb/widget.js";
-      script.async = true;
-      script.charset = "utf-8";
-      document.body.appendChild(script);
-      
-      // 스크립트 로드 후 위젯 초기화 (약간의 딜레이를 줍니다)
-      setTimeout(() => {
-        if (typeof YG !== "undefined") {
-          onYouglishAPIReady();
-        } else {
-          // 스크립트 로딩이 지연되는 경우 재시도
-          let checkYG = setInterval(() => {
-            if (typeof YG !== "undefined") {
-              clearInterval(checkYG);
-              onYouglishAPIReady();
-            }
-          }, 500);
-        }
-      }, 500);
-    };
-
+    // YouGlish API가 스크립트 로드 완료 후 자동으로 호출하는 약속된 함수명입니다.
     function onYouglishAPIReady() {
-      widget = new YG.Widget("yg-widget-0", {
+      widget = new YG.Widget("youglish-widget", {
         width: "100%",
         bkgColor: "theme_dark",
         events: {
-          'onFetchDone': onFetchDone,
-          'onVideoPlayerReady': onVideoPlayerReady
+          'onFetchDone': onFetchDone
         }
       });
-      // 위젯 껍데기가 만들어진 후 검색 명령
-      setTimeout(() => { loadContentToUI(); }, 800);
-    }
-
-    function onVideoPlayerReady() {
-      widgetReady = true;
+      // 위젯 생성 후 0.5초 뒤에 첫 번째 영상을 검색합니다.
+      setTimeout(() => { loadContentToUI(); }, 500);
     }
 
     function onFetchDone(event) {
@@ -158,6 +123,7 @@
       const data = chunkDB[currentIndex];
       
       if (widget) {
+        // 미국식 영어(US) 기준으로 검색
         widget.fetch(data.query, "english", "us");
       }
 
@@ -168,7 +134,9 @@
       updateCounterUI();
     }
 
-    function nextVideo() { if (widget && widgetReady) widget.next(); }
+    function nextVideo() {
+      if (widget) widget.next();
+    }
 
     function addCountAndReplay() {
       const data = chunkDB[currentIndex];
@@ -179,7 +147,7 @@
         localStorage.setItem(`chunk_count_day_${data.id}`, currentCount);
         updateCounterUI(currentCount);
       }
-      if (widget && widgetReady) widget.replay();
+      if (widget) widget.replay();
     }
 
     function updateCounterUI(count) {
@@ -204,5 +172,7 @@
       else alert("마지막 문장입니다.");
     }
   </script>
+  <!-- YouGlish 스크립트를 편법 없이 가장 정석적인 위치에서 로드합니다 -->
+  <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
 </body>
 </html>
