@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Chunk-Flow 100 (v2)</title>
+  <title>Chunk-Flow 100 (v3)</title>
   <style>
     :root {
       --bg: #121212; --card: #1e1e1e; --primary: #4f46e5;
@@ -15,6 +15,7 @@
       font-family: -apple-system, sans-serif;
       display: flex; flex-direction: column; min-height: 100vh;
     }
+    
     /* 상단 네비게이션바 */
     .nav-bar {
       display: flex; justify-content: space-between; align-items: center;
@@ -27,25 +28,30 @@
     .nav-btn:active { background: #3f3f46; }
     .nav-title { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
     
-    /* 비디오 플레이어 */
+    /* 비디오 영역 (YouGlish) */
     .video-wrap {
-      position: relative; width: 100%; padding-top: 56.25%;
-      border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 16px;
+      width: 100%; min-height: 220px; border-radius: 12px; overflow: hidden;
+      background: #000; margin-bottom: 16px;
     }
-    .video-wrap iframe {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+    
+    /* 조작 버튼 (다른 원어민 보기) */
+    .action-row {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .btn-secondary {
+      flex: 1; background: #3f3f46; color: white; border: none;
+      padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
     }
     
     /* 학습 카드 */
     .card { background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
-    .chunk-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
     .chunk-block {
-      background: #2a2a2a; border: 1px solid #3f3f46; border-radius: 8px;
-      padding: 10px 14px; font-size: 1.15rem; font-weight: 600;
-      color: #38bdf8; cursor: pointer; transition: all 0.2s;
+      display: inline-block; background: #2a2a2a; border: 1px solid #3f3f46; border-radius: 8px;
+      padding: 10px 14px; font-size: 1.2rem; font-weight: 600; color: #38bdf8;
+      cursor: pointer; margin-top: 8px;
     }
     .chunk-block.hidden { color: transparent; background: #333; }
-    .translation { color: var(--text-sub); font-size: 0.95rem; margin-top: 6px; line-height: 1.4; }
+    .translation { color: var(--text-sub); font-size: 1rem; margin-top: 10px; line-height: 1.5; }
     
     /* 프로그레스바 */
     .progress-bar-bg { background: #2a2a2a; height: 12px; border-radius: 6px; overflow: hidden; margin: 8px 0; }
@@ -54,41 +60,39 @@
     /* 대형 카운터 버튼 */
     .btn-counter {
       width: 100%; background: var(--primary); color: #fff; border: none;
-      border-radius: 16px; padding: 24px 0; font-size: 1.5rem; font-weight: 700;
+      border-radius: 16px; padding: 20px 0; font-size: 1.3rem; font-weight: 700;
       cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4); margin-top: auto;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4); margin-top: auto; margin-bottom: 16px;
     }
     .btn-counter:active { transform: scale(0.98); opacity: 0.9; }
-    .counter-sub { font-size: 0.85rem; font-weight: 400; color: #c7d2fe; }
   </style>
 </head>
 <body>
 
-  <!-- 네비게이션: 이전/다음 -->
   <div class="nav-bar">
     <button class="nav-btn" onclick="prevChunk()">◀ 이전</button>
     <div class="nav-title" id="dayTitle">Day 1</div>
     <button class="nav-btn" onclick="nextChunk()">다음 ▶</button>
   </div>
 
-  <!-- 비디오 영역 -->
+  <!-- YouGlish 위젯 영역 -->
   <div class="video-wrap">
-    <div id="player"></div>
+    <div id="yg-widget-0"></div>
   </div>
 
-  <!-- 청크 및 해석 영역 -->
+  <div class="action-row">
+    <button class="btn-secondary" onclick="nextVideo()">🔄 다른 원어민 영상 넘기기</button>
+  </div>
+
   <div class="card">
-    <div style="font-size: 0.8rem; color: var(--text-sub);">TODAY's CHUNK</div>
-    <div class="chunk-container" id="chunkArea">
-      <!-- 자바스크립트로 자동 생성됨 -->
-    </div>
+    <div style="font-size: 0.8rem; color: var(--text-sub);">핵심 소리 블록 (터치하여 가리기)</div>
+    <div class="chunk-block" id="chunkText" onclick="this.classList.toggle('hidden')"></div>
     <div class="translation" id="transArea"></div>
   </div>
 
-  <!-- 진척도 영역 -->
   <div class="card">
     <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-      <span>숙달 게이지 (자동 저장됨)</span>
+      <span>숙달 게이지 (자동 저장)</span>
       <span id="counterText">0 / 100회</span>
     </div>
     <div class="progress-bar-bg">
@@ -96,144 +100,103 @@
     </div>
   </div>
 
-  <button class="btn-counter" onclick="addCount()">
-    <span id="btnLabel">1회 발화 완료 탭</span>
-    <span class="counter-sub">소리 내어 말할 때마다 터치하세요</span>
+  <button class="btn-counter" onclick="addCountAndReplay()">
+    <span id="btnLabel">발화 완료 (터치 시 자동 리플레이)</span>
+    <span style="font-size: 0.85rem; color: #c7d2fe;">한 번 말하고 누르면 영상을 다시 틀어줍니다</span>
   </button>
 
+  <!-- YouGlish API 스크립트 -->
+  <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
   <script>
     // ==========================================
-    // 1. 영어 문장 데이터베이스 (여기에 1000개까지 계속 추가 가능!)
+    // 영어 청크 1,000개 데이터베이스 (우선 5개 샘플 탑재)
     // ==========================================
     const chunkDB = [
-      {
-        id: 1, // Day 1
-        videoId: 'V6oQqPW-n4Y', // 유튜브 영상 고유 주소
-        start: 533, end: 540,   // 시작/끝 초
-        chunks: ["I just wanna", "eat it"],
-        trans: "나 그냥 / 그거 먹고 싶어",
-        sound: "아이 저스 워너 / 이릿"
-      },
-      {
-        id: 2, // Day 2
-        videoId: 'V6oQqPW-n4Y',
-        start: 830, end: 835, 
-        chunks: ["I don't wanna", "see"],
-        trans: "나 원하지 않아 / 보는 것을 (보고 싶지 않아)",
-        sound: "아이 돈 워너 / 씨"
-      },
-      {
-        id: 3, // Day 3
-        videoId: '8EXl3AnOINc', 
-        start: 310, end: 316,
-        chunks: ["I have been", "in business", "for a while"],
-        trans: "나는 있어왔어 / 이 업계(사업)에 / 꽤 오랫동안",
-        sound: "아이 해브 빈 / 인 비즈니스 / 포 어 와일"
-      }
+      { id: 1, query: "I just wanna", trans: "나 그냥 ~하고 싶어<br>(뒤에 다양한 동사가 오는 것을 영상에서 확인하세요)" },
+      { id: 2, query: "I'm looking forward to", trans: "나 ~가 무척 기대돼 / 고대하고 있어" },
+      { id: 3, query: "I was wondering if", trans: "혹시 ~할 수 있을까 해서요 (조심스러운 부탁)" },
+      { id: 4, query: "I'm supposed to", trans: "나 (원래) ~하기로 되어 있어 / ~해야 해" },
+      { id: 5, query: "Let me know if", trans: "만약 ~하면 나한테 알려줘" }
     ];
 
-    let currentIndex = 0; // 현재 학습 중인 인덱스
-    let player;
+    let currentIndex = 0;
+    let widget;
 
-    // 유튜브 API 로드
-    let tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    let firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    function onYouTubeIframeAPIReady() {
-      const data = chunkDB[currentIndex];
-      player = new YT.Player('player', {
-        videoId: data.videoId,
-        playerVars: { 'playsinline': 1, 'controls': 1, 'rel': 0, 'start': data.start, 'end': data.end },
-        events: { 'onStateChange': onPlayerStateChange, 'onReady': onPlayerReady }
+    // YouGlish 위젯 초기화
+    function onYouglishAPIReady() {
+      widget = new YG.Widget("yg-widget-0", {
+        width: "100%",
+        bkgColor: "theme_dark",
+        events: {
+          'onFetchDone': onFetchDone
+        }
       });
-    }
-
-    function onPlayerReady(event) {
       loadContentToUI();
     }
 
-    // 영상 종료 시 무한 루프
-    function onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.ENDED) {
-        player.seekTo(chunkDB[currentIndex].start);
-        player.playVideo();
+    // 영상 검색이 완료되었을 때
+    function onFetchDone(event) {
+      if (event.totalResult === 0) {
+        alert("해당 청크의 영상이 없습니다.");
       }
     }
 
-    // ==========================================
-    // 2. 화면 내용 업데이트 (문장 교체)
-    // ==========================================
+    // 화면 업데이트
     function loadContentToUI() {
       const data = chunkDB[currentIndex];
       
-      // 영상 교체
-      if (player && player.loadVideoById) {
-        player.loadVideoById({ videoId: data.videoId, startSeconds: data.start, endSeconds: data.end });
+      // YouGlish에 해당 청크 검색 명령 내리기
+      if (widget) {
+        widget.fetch(data.query, "english", "us"); // 미국 영어 기준
       }
 
-      // 상단 타이틀
       document.getElementById('dayTitle').innerText = `Day ${data.id}`;
-
-      // 청크 블록 생성
-      const chunkArea = document.getElementById('chunkArea');
-      chunkArea.innerHTML = '';
-      data.chunks.forEach(text => {
-        const div = document.createElement('div');
-        div.className = 'chunk-block';
-        div.innerText = text;
-        div.onclick = function() { this.classList.toggle('hidden'); };
-        chunkArea.appendChild(div);
-      });
-
-      // 번역 텍스트
-      document.getElementById('transArea').innerHTML = `${data.trans} <br><small style="color:#6b7280;">(${data.sound})</small>`;
+      document.getElementById('chunkText').innerText = data.query;
+      document.getElementById('chunkText').classList.remove('hidden');
+      document.getElementById('transArea').innerHTML = data.trans;
 
       updateCounterUI();
     }
 
-    // ==========================================
-    // 3. 네비게이션 (이전 / 다음)
-    // ==========================================
-    function prevChunk() {
-      if (currentIndex > 0) { currentIndex--; loadContentToUI(); }
-      else { alert("첫 번째 문장입니다."); }
+    // 다른 원어민 영상으로 넘기기
+    function nextVideo() {
+      if (widget) widget.next();
     }
 
-    function nextChunk() {
-      if (currentIndex < chunkDB.length - 1) { currentIndex++; loadContentToUI(); }
-      else { alert("마지막 문장입니다. 새로운 문장을 업데이트 해주세요!"); }
-    }
-
-    // ==========================================
-    // 4. 진척도 자동 저장 (기기 저장소 활용)
-    // ==========================================
-    function getCountForCurrent() {
+    // 카운트 증가 & 현재 영상 구간 자동 재시작
+    function addCountAndReplay() {
       const data = chunkDB[currentIndex];
-      return parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
-    }
-
-    function addCount() {
-      const data = chunkDB[currentIndex];
-      let currentCount = getCountForCurrent();
+      let currentCount = parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
       
       if (currentCount < 100) {
         currentCount++;
         localStorage.setItem(`chunk_count_day_${data.id}`, currentCount);
         updateCounterUI(currentCount);
       }
+      // 사용자가 탭하면 바로 그 원어민의 문장을 다시 틀어줌 (반복 섀도잉)
+      if (widget) widget.replay();
     }
 
     function updateCounterUI(count) {
-      if (count === undefined) count = getCountForCurrent();
+      const data = chunkDB[currentIndex];
+      if (count === undefined) count = parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
       
       document.getElementById('counterText').innerText = `${count} / 100회`;
       document.getElementById('progressBar').style.width = `${count}%`;
       
       const btnLabel = document.getElementById('btnLabel');
       if (count >= 100) btnLabel.innerText = "🎉 100회 마스터 완료!";
-      else btnLabel.innerText = `말하고 탭 (${count}회)`;
+      else btnLabel.innerText = `발화 완료 (터치 시 자동 리플레이) - ${count}회`;
+    }
+
+    // 네비게이션
+    function prevChunk() {
+      if (currentIndex > 0) { currentIndex--; loadContentToUI(); }
+      else { alert("첫 번째 문장입니다."); }
+    }
+    function nextChunk() {
+      if (currentIndex < chunkDB.length - 1) { currentIndex++; loadContentToUI(); }
+      else { alert("마지막 문장입니다. 새로운 청크를 업데이트 해주세요!"); }
     }
   </script>
 </body>
