@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Chunk-Flow 100 (v5)</title>
+  <title>Chunk-Flow 100 (v6)</title>
   <style>
     :root {
       --bg: #121212; --card: #1e1e1e; --primary: #4f46e5;
@@ -19,11 +19,11 @@
     .nav-title { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
     
     .video-wrap {
-      width: 100%; min-height: 250px; border-radius: 12px; overflow: hidden;
+      width: 100%; height: 260px; border-radius: 12px; overflow: hidden;
       background: #000; margin-bottom: 12px; display: flex; justify-content: center; align-items: center;
+      border: 1px solid #333;
     }
     
-    /* 제어 버튼 영역 */
     .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
     .btn-action {
       flex: 1; background: #3f3f46; color: white; border: none;
@@ -51,6 +51,8 @@
     }
     .btn-counter:active { transform: scale(0.98); opacity: 0.9; }
   </style>
+  <!-- 스크립트를 body 아래가 아닌 head에서 미리 로드합니다 -->
+  <script src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
 </head>
 <body>
 
@@ -60,13 +62,13 @@
     <button class="nav-btn" onclick="nextChunk()">다음 ▶</button>
   </div>
 
-  <div class="video-wrap">
+  <div class="video-wrap" id="videoContainer">
+    <!-- 위젯이 동적으로 생성될 위치 -->
     <div id="yg-widget-0"></div>
   </div>
 
   <div class="action-row">
-    <!-- 이 버튼을 눌러야만 영상을 불러오게 하여 모바일 브라우저 차단을 뚫습니다 -->
-    <button class="btn-action btn-play" onclick="fetchVideo()">▶ 재생 (불러오기)</button>
+    <button class="btn-action btn-play" onclick="injectAndFetch()">▶ 영상 띄우기</button>
     <button class="btn-action" onclick="nextVideo()">🔄 다른 영상</button>
   </div>
 
@@ -87,7 +89,7 @@
   </div>
 
   <button class="btn-counter" onclick="addCountAndReplay()">
-    <span id="btnLabel">발화 완료 (터치 시 자동 리플레이)</span>
+    <span id="btnLabel">발화 완료 (터치 시 리플레이)</span>
   </button>
 
   <script>
@@ -100,17 +102,10 @@
     ];
 
     let currentIndex = 0;
-    let widget;
+    let widget = null;
 
-    function onYouglishAPIReady() {
-      widget = new YG.Widget("yg-widget-0", {
-        width: "100%",
-        components: 9, 
-        events: {
-          'onFetchDone': function(e) { if(e.totalResult === 0) alert("영상이 없습니다."); }
-        }
-      });
-    }
+    // 자동 실행 방지: 초기화 함수를 비워둡니다
+    function onYouglishAPIReady() {}
 
     function loadContentToUI() {
       const data = chunkDB[currentIndex];
@@ -120,58 +115,33 @@
       document.getElementById('transArea').innerHTML = data.trans;
       updateCounterUI();
       
-      // 데이(Day)가 넘어가면 위젯 영상을 초기화 상태로 둡니다.
-      // 사용자가 '재생' 버튼을 눌러야 새로운 영상이 뜹니다.
+      // 데이가 변경되면 기존 위젯을 삭제하고 초기화합니다
+      resetWidget();
     }
 
-    // 모바일 정책을 뚫는 핵심: 유저의 '터치' 이벤트 안에서 영상 검색(fetch) 실행
-    function fetchVideo() {
-      if (widget) {
-        const data = chunkDB[currentIndex];
-        widget.fetch(data.query, "english", "us");
+    function resetWidget() {
+      widget = null;
+      const container = document.getElementById('videoContainer');
+      container.innerHTML = '<div id="yg-widget-0"></div>';
+    }
+
+    // 핵심 해결책: 버튼을 누르는 순간 위젯을 강제 생성하고 영상을 찾습니다
+    function injectAndFetch() {
+      if (typeof YG === "undefined") {
+        alert("YouGlish 시스템 로딩 중입니다. 1~2초 후 다시 눌러주세요.");
+        return;
       }
-    }
 
-    function nextVideo() {
-      if (widget) widget.next();
-    }
-
-    function addCountAndReplay() {
       const data = chunkDB[currentIndex];
-      let currentCount = parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
-      
-      if (currentCount < 100) {
-        currentCount++;
-        localStorage.setItem(`chunk_count_day_${data.id}`, currentCount);
-        updateCounterUI(currentCount);
-      }
-      if (widget) widget.replay();
-    }
 
-    function updateCounterUI(count) {
-      const data = chunkDB[currentIndex];
-      if (count === undefined) count = parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
-      
-      document.getElementById('counterText').innerText = `${count} / 100회`;
-      document.getElementById('progressBar').style.width = `${count}%`;
-      
-      const btnLabel = document.getElementById('btnLabel');
-      if (count >= 100) btnLabel.innerText = "🎉 100회 마스터 완료!";
-      else btnLabel.innerText = `발화 완료 (터치 시 자동 리플레이) - ${count}회`;
-    }
-
-    function prevChunk() {
-      if (currentIndex > 0) { currentIndex--; loadContentToUI(); }
-    }
-    
-    function nextChunk() {
-      if (currentIndex < chunkDB.length - 1) { currentIndex++; loadContentToUI(); }
-    }
-
-    window.onload = function() {
-      loadContentToUI();
-    };
-  </script>
-  <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
-</body>
-</html>
+      if (!widget) {
+        widget = new YG.Widget("yg-widget-0", {
+          width: "100%",
+          components: 9, // 필수 컨트롤만 표시
+          events: {
+            'onFetchDone': function(e) { if(e.totalResult === 0) alert("영상이 없습니다."); }
+          }
+        });
+        
+        // 위젯 객체 생성 직후 fetch 명령 하달
+        setTimeout(() => { widget.fetch(data.query, "english", "us"); }, 300
