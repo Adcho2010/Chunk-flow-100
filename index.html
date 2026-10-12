@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Chunk-Flow 100</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --primary: #4f46e5;
+      --accent: #22c55e;
+      --text: #f3f4f6;
+      --text-sub: #9ca3af;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 16px;
+    }
+    .video-wrap iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .chunk-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .chunk-block {
+      background: #2a2a2a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #38bdf8;
+      cursor: pointer;
+    }
+    .chunk-block.hidden {
+      color: transparent;
+      background: #333;
+      user-select: none;
+    }
+    .translation {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+    .progress-bar-bg {
+      background: #2a2a2a;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-fill {
+      background: var(--accent);
+      height: 100%;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+    .btn-counter {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 24px 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+      margin-top: auto;
+    }
+    .btn-counter:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+    .counter-sub {
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: #c7d2fe;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 영상 클립 플레이어 (YouTube Iframe) -->
+  <div class="video-wrap">
+    <div id="player"></div>
+  </div>
+
+  <!-- 소리 블록 & 직청직해 카드 -->
+  <div class="card">
+    <div style="font-size: 0.8rem; color: var(--text-sub); text-transform: uppercase;">Today's Sound Block</div>
+    
+    <!-- 터치 시 텍스트 가리기/보이기 토글 -->
+    <div class="chunk-container" id="chunkArea">
+      <div class="chunk-block" onclick="toggleChunk(this)">I just wanna</div>
+      <div class="chunk-block" onclick="toggleChunk(this)">eat it</div>
+    </div>
+    <div class="translation">나 그냥 / 그거 먹고 싶어 (소리: 아이 저스 워너 / 이릿)</div>
+  </div>
+
+  <!-- 100회 달성 진척도 -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+      <span>반복 숙달 게이지</span>
+      <span id="counterText">0 / 100회</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- 대형 원터치 카운터 버튼 -->
+  <button class="btn-counter" onclick="addCount()">
+    <span id="btnLabel">1회 발화 완료 탭</span>
+    <span class="counter-sub">소리 내어 말할 때마다 화면을 터치하세요</span>
+  </button>
+
+  <script>
+    // 1. YouTube Iframe API 로드 및 특정 구간 무한 루프 설정
+    let tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    let firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    let player;
+    const START_TIME = 533; // 8분 53초 ("I just wanna eat it" 구간 예시)
+    const END_TIME = 540;   // 9분 00초
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        videoId: 'V6oQqPW-n4Y', // 주아쌤 영상 ID
+        playerVars: {
+          'playsinline': 1,
+          'controls': 1,
+          'rel': 0,
+          'start': START_TIME,
+          'end': END_TIME
+        },
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      // 영상 종료 시 시작 지점으로 되감아 무한 루프
+      if (event.data === YT.PlayerState.ENDED) {
+        player.seekTo(START_TIME);
+        player.playVideo();
+      }
+    }
+
+    // 2. 청크 블록 가리기/보이기 토글
+    function toggleChunk(element) {
+      element.classList.toggle('hidden');
+    }
+
+    // 3. 진척도 및 카운터
+    let count = parseInt(localStorage.getItem('chunk_count_v1') || '0');
+    updateUI();
+
+    function addCount() {
+      if (count < 100) {
+        count++;
+        localStorage.setItem('chunk_count_v1', count);
+        updateUI();
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('counterText').innerText = `${count} / 100회`;
+      document.getElementById('progressBar').style.width = `${count}%`;
+      
+      const btnLabel = document.getElementById('btnLabel');
+      if (count >= 100) {
+        btnLabel.innerText = "🎉 100회 달성 완료!";
+      } else {
+        btnLabel.innerText = `말하고 탭 (${count}회)`;
+      }
+    }
+  </script>
+</body>
+</html>
