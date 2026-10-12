@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Chunk-Flow 100 (v4)</title>
+  <title>Chunk-Flow 100 (v5)</title>
   <style>
     :root {
       --bg: #121212; --card: #1e1e1e; --primary: #4f46e5;
@@ -12,44 +12,40 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0; padding: 16px; background: var(--bg); color: var(--text);
-      font-family: -apple-system, sans-serif;
-      display: flex; flex-direction: column; min-height: 100vh;
+      font-family: -apple-system, sans-serif; display: flex; flex-direction: column; min-height: 100vh;
     }
-    .nav-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 16px;
-    }
-    .nav-btn {
-      background: #2a2a2a; color: var(--text); border: none;
-      padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;
-    }
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .nav-btn { background: #2a2a2a; color: var(--text); border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .nav-title { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
     
-    .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .video-wrap {
+      width: 100%; min-height: 250px; border-radius: 12px; overflow: hidden;
+      background: #000; margin-bottom: 12px; display: flex; justify-content: center; align-items: center;
+    }
     
-    /* 청크 블록 강조 */
-    .chunk-block-container { text-align: center; margin: 20px 0; }
+    /* 제어 버튼 영역 */
+    .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .btn-action {
+      flex: 1; background: #3f3f46; color: white; border: none;
+      padding: 14px; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer;
+    }
+    .btn-play { background: #eab308; color: #000; }
+    .btn-action:active { transform: scale(0.97); }
+
+    .card { background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
     .chunk-block {
-      display: inline-block; background: #2a2a2a; border: 2px solid #38bdf8; border-radius: 12px;
-      padding: 16px 24px; font-size: 1.6rem; font-weight: 700; color: #38bdf8;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+      display: inline-block; background: #2a2a2a; border: 1px solid #38bdf8; border-radius: 8px;
+      padding: 10px 14px; font-size: 1.3rem; font-weight: 700; color: #38bdf8; cursor: pointer; margin-top: 8px;
     }
-    .chunk-block.hidden { color: transparent; background: #333; border-color: #3f3f46; box-shadow: none; }
-    .translation { text-align: center; color: var(--text-sub); font-size: 1.1rem; margin-top: 16px; line-height: 1.5; }
-    
-    /* YouGlish 연결 버튼 */
-    .btn-youglish {
-      width: 100%; background: #eab308; color: #000; border: none;
-      border-radius: 12px; padding: 16px 0; font-size: 1.2rem; font-weight: 700;
-      cursor: pointer; margin-bottom: 24px; display: flex; justify-content: center; align-items: center; gap: 8px;
-    }
+    .chunk-block.hidden { color: transparent; background: #333; border-color: #3f3f46; }
+    .translation { color: var(--text-sub); font-size: 1rem; margin-top: 10px; line-height: 1.5; }
     
     .progress-bar-bg { background: #2a2a2a; height: 12px; border-radius: 6px; overflow: hidden; margin: 8px 0; }
     .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.2s ease; }
     
     .btn-counter {
       width: 100%; background: var(--primary); color: #fff; border: none;
-      border-radius: 16px; padding: 24px 0; font-size: 1.5rem; font-weight: 700;
+      border-radius: 16px; padding: 20px 0; font-size: 1.3rem; font-weight: 700;
       cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
       box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4); margin-top: auto; margin-bottom: 16px;
     }
@@ -64,34 +60,34 @@
     <button class="nav-btn" onclick="nextChunk()">다음 ▶</button>
   </div>
 
+  <div class="video-wrap">
+    <div id="yg-widget-0"></div>
+  </div>
+
+  <div class="action-row">
+    <!-- 이 버튼을 눌러야만 영상을 불러오게 하여 모바일 브라우저 차단을 뚫습니다 -->
+    <button class="btn-action btn-play" onclick="fetchVideo()">▶ 재생 (불러오기)</button>
+    <button class="btn-action" onclick="nextVideo()">🔄 다른 영상</button>
+  </div>
+
   <div class="card">
-    <div style="font-size: 0.9rem; color: var(--text-sub); text-align: center;">오늘의 핵심 청크 (터치하여 가리기)</div>
-    
-    <div class="chunk-block-container">
-      <div class="chunk-block" id="chunkText" onclick="this.classList.toggle('hidden')"></div>
-    </div>
-    
+    <div style="font-size: 0.8rem; color: var(--text-sub);">핵심 소리 블록 (터치하여 가리기)</div>
+    <div class="chunk-block" id="chunkText" onclick="this.classList.toggle('hidden')"></div>
     <div class="translation" id="transArea"></div>
   </div>
 
-  <!-- YouGlish 외부 링크 버튼 -->
-  <button class="btn-youglish" onclick="openYouGlish()">
-    ▶ YouGlish 원어민 발음 듣기
-  </button>
-
   <div class="card">
-    <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
+    <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
       <span>숙달 게이지</span>
-      <span id="counterText" style="font-weight: 600;">0 / 100회</span>
+      <span id="counterText">0 / 100회</span>
     </div>
     <div class="progress-bar-bg">
       <div class="progress-fill" id="progressBar"></div>
     </div>
   </div>
 
-  <button class="btn-counter" onclick="addCount()">
-    <span id="btnLabel">발화 완료 (터치)</span>
-    <span style="font-size: 0.9rem; color: #c7d2fe;">소리 내어 말할 때마다 기록하세요</span>
+  <button class="btn-counter" onclick="addCountAndReplay()">
+    <span id="btnLabel">발화 완료 (터치 시 자동 리플레이)</span>
   </button>
 
   <script>
@@ -104,6 +100,17 @@
     ];
 
     let currentIndex = 0;
+    let widget;
+
+    function onYouglishAPIReady() {
+      widget = new YG.Widget("yg-widget-0", {
+        width: "100%",
+        components: 9, 
+        events: {
+          'onFetchDone': function(e) { if(e.totalResult === 0) alert("영상이 없습니다."); }
+        }
+      });
+    }
 
     function loadContentToUI() {
       const data = chunkDB[currentIndex];
@@ -112,16 +119,24 @@
       document.getElementById('chunkText').classList.remove('hidden');
       document.getElementById('transArea').innerHTML = data.trans;
       updateCounterUI();
+      
+      // 데이(Day)가 넘어가면 위젯 영상을 초기화 상태로 둡니다.
+      // 사용자가 '재생' 버튼을 눌러야 새로운 영상이 뜹니다.
     }
 
-    // YouGlish 사이트를 새 탭으로 열어주는 함수
-    function openYouGlish() {
-      const query = encodeURIComponent(chunkDB[currentIndex].query);
-      const url = `https://youglish.com/pronounce/${query}/english/us`;
-      window.open(url, '_blank');
+    // 모바일 정책을 뚫는 핵심: 유저의 '터치' 이벤트 안에서 영상 검색(fetch) 실행
+    function fetchVideo() {
+      if (widget) {
+        const data = chunkDB[currentIndex];
+        widget.fetch(data.query, "english", "us");
+      }
     }
 
-    function addCount() {
+    function nextVideo() {
+      if (widget) widget.next();
+    }
+
+    function addCountAndReplay() {
       const data = chunkDB[currentIndex];
       let currentCount = parseInt(localStorage.getItem(`chunk_count_day_${data.id}`) || '0');
       
@@ -130,6 +145,7 @@
         localStorage.setItem(`chunk_count_day_${data.id}`, currentCount);
         updateCounterUI(currentCount);
       }
+      if (widget) widget.replay();
     }
 
     function updateCounterUI(count) {
@@ -141,23 +157,21 @@
       
       const btnLabel = document.getElementById('btnLabel');
       if (count >= 100) btnLabel.innerText = "🎉 100회 마스터 완료!";
-      else btnLabel.innerText = `발화 완료 (터치) - ${count}회`;
+      else btnLabel.innerText = `발화 완료 (터치 시 자동 리플레이) - ${count}회`;
     }
 
     function prevChunk() {
       if (currentIndex > 0) { currentIndex--; loadContentToUI(); }
-      else alert("첫 번째 문장입니다.");
     }
     
     function nextChunk() {
       if (currentIndex < chunkDB.length - 1) { currentIndex++; loadContentToUI(); }
-      else alert("마지막 문장입니다.");
     }
 
-    // 초기 로딩
     window.onload = function() {
       loadContentToUI();
     };
   </script>
+  <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
 </body>
 </html>
