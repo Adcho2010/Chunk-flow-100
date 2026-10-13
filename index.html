@@ -92,11 +92,127 @@
 
   <script>
     const chunkDB = [
+      // [의도와 계획]
       { id: 1, query: "I just wanna", trans: "나 그냥 ~하고 싶어" },
-      { id: 2, query: "I'm looking forward to", trans: "나 ~가 무척 기대돼" },
-      { id: 3, query: "I was wondering if", trans: "혹시 ~할 수 있을까 해서요" },
-      { id: 4, query: "I'm supposed to", trans: "나 ~하기로 되어 있어 / ~해야 해" },
-      { id: 5, query: "Let me know if", trans: "만약 ~하면 나한테 알려줘" }
+      { id: 2, query: "I need to", trans: "나 ~해야 해 (필요성)" },
+      { id: 3, query: "I have to", trans: "나 ~해야 해 (의무)" },
+      { id: 4, query: "I'm trying to", trans: "나 ~하려고 노력 중이야 / 시도 중이야" },
+      { id: 5, query: "I'm planning to", trans: "나 ~할 계획이야" },
+      { id: 6, query: "I decided to", trans: "나 ~하기로 결정했어" },
+      { id: 7, query: "I forgot to", trans: "나 ~하는 걸 깜빡했어" },
+      { id: 8, query: "I make sure to", trans: "난 반드시 ~하도록 해" },
+      { id: 9, query: "I tend to", trans: "난 (보통) ~하는 경향이 있어" },
+      { id: 10, query: "I'm ready to", trans: "나 ~할 준비가 됐어" },
+
+      // [생각과 확신]
+      { id: 11, query: "I think", trans: "내 생각엔 ~인 것 같아" },
+      { id: 12, query: "I guess", trans: "~인 것 같아 (추측)" },
+      { id: 13, query: "I figure", trans: "내 생각엔 ~일 거야 (판단)" },
+      { id: 14, query: "I doubt", trans: "난 ~가 아닐 거라고 생각해" },
+      { id: 15, query: "I bet", trans: "틀림없이 ~일 거야 (확신)" },
+      { id: 16, query: "I wonder if", trans: "~인지 궁금해" },
+      { id: 17, query: "I'm sure", trans: "난 ~라고 확신해" },
+      { id: 18, query: "I'm afraid", trans: "유감이지만 ~인 것 같아" },
+      { id: 19, query: "I assume", trans: "~라고 가정/추정해" },
+      { id: 20, query: "I suppose", trans: "~인 것 같네 (마지못한 동의)" },
+
+      // [질문과 제안]
+      { id: 21, query: "Do you want me to", trans: "내가 ~해주길 바라?" },
+      { id: 22, query: "Do you mind if I", trans: "내가 ~해도 괜찮을까? (정중한 허락)" },
+      { id: 23, query: "Are you going to", trans: "너 ~할 거야?" },
+      { id: 24, query: "Are you planning to", trans: "너 ~할 계획이야?" },
+      { id: 25, query: "Have you ever", trans: "너 ~해본 적 있어?" },
+      { id: 26, query: "How long have you", trans: "얼마나 오랫동안 ~해왔어?" },
+      { id: 27, query: "What if", trans: "만약 ~하면 어쩌지?" },
+      { id: 28, query: "Why don't we", trans: "우리 ~하는 게 어때?" },
+      { id: 29, query: "How about", trans: "~하는 건 어때?" },
+      { id: 30, query: "Is it okay if", trans: "~해도 괜찮아?" },
+
+      // [상태와 상황]
+      { id: 31, query: "I'm used to", trans: "나 ~하는 것에 익숙해" },
+      { id: 32, query: "I'm about to", trans: "나 막 ~하려던 참이야" },
+      { id: 33, query: "I was about to", trans: "나 막 ~하려던 참이었어" },
+      { id: 34, query: "I'm supposed to", trans: "나 ~하기로 되어 있어 / 원래 ~해야 해" },
+      { id: 35, query: "I was supposed to", trans: "나 ~하기로 되어 있었는데 (못 했어)" },
+      { id: 36, query: "I'm willing to", trans: "기꺼이 ~할 의향이 있어" },
+      { id: 37, query: "I'm allowed to", trans: "나 ~해도 돼 (허락받음)" },
+      { id: 38, query: "I'm expected to", trans: "나 ~할 것으로 예상/기대돼" },
+      { id: 39, query: "I happen to", trans: "나 우연히 ~하게 됐어" },
+      { id: 40, query: "I manage to", trans: "가까스로 ~해내다 / 어떻게든 ~하다" },
+
+      // [부탁과 조언]
+      { id: 41, query: "Let me", trans: "내가 ~할게" },
+      { id: 42, query: "Let me know", trans: "나한테 알려줘" },
+      { id: 43, query: "Let's see if", trans: "~인지 한번 보자" },
+      { id: 44, query: "I'd rather", trans: "차라리 ~하는 게 낫겠어" },
+      { id: 45, query: "I'd better", trans: "나 ~하는 게 좋겠어" },
+      { id: 46, query: "You'd better", trans: "너 ~하는 게 좋을 거야" },
+      { id: 47, query: "You don't have to", trans: "너 ~할 필요 없어" },
+      { id: 48, query: "It takes", trans: "(시간/노력이) ~만큼 걸려/필요해" },
+      { id: 49, query: "It depends on", trans: "그건 ~에 달려있어" },
+      { id: 50, query: "It turns out", trans: "알고 보니 ~더라" },
+
+      // [필수 구동사 1]
+      { id: 51, query: "Look into", trans: "~을 알아보다 / 조사하다" },
+      { id: 52, query: "Figure out", trans: "~을 알아내다 / 이해하다" },
+      { id: 53, query: "I'm working on", trans: "나 ~를 작업/진행 중이야 (자동화 테스트 구축 등)" },
+      { id: 54, query: "Catch up", trans: "밀린 일을 하다 / 근황을 나누다" },
+      { id: 55, query: "Follow up", trans: "후속 조치하다 / 챙겨보다" },
+      { id: 56, query: "Bring up", trans: "(이야기 등을) 꺼내다" },
+      { id: 57, query: "Point out", trans: "지적하다 / 언급하다" },
+      { id: 58, query: "Find out", trans: "알아내다 / 발견하다" },
+      { id: 59, query: "Run into", trans: "우연히 만나다 / 부딪히다" },
+      { id: 60, query: "Come up with", trans: "(아이디어 등을) 떠올리다" },
+
+      // [대화 윤활유 & 일상]
+      { id: 61, query: "As far as I know", trans: "내가 아는 한" },
+      { id: 62, query: "As soon as", trans: "~하자마자" },
+      { id: 63, query: "By the way", trans: "그건 그렇고 / 그런데" },
+      { id: 64, query: "To be honest", trans: "솔직히 말해서" },
+      { id: 65, query: "On the other hand", trans: "반면에" },
+      { id: 66, query: "In that case", trans: "그런 경우라면" },
+      { id: 67, query: "Make sense", trans: "말이 되네 / 이해가 가네" },
+      { id: 68, query: "take care of", trans: "~를 돌보다 / 처리하다 (아진이 돌보기, 업무 등)" },
+      { id: 69, query: "I'm looking forward to", trans: "나 ~가 무척 기대돼" },
+      { id: 70, query: "Put off", trans: "미루다 / 연기하다" },
+
+      // [감정과 난관]
+      { id: 71, query: "I can't wait to", trans: "빨리 ~하고 싶어" },
+      { id: 72, query: "I can't stand", trans: "나 ~를 못 견디겠어" },
+      { id: 73, query: "I can't help", trans: "~하지 않을 수 없어 / 어쩔 수 없어" },
+      { id: 74, query: "I can't afford to", trans: "나 ~할 여유(돈/시간)가 없어" },
+      { id: 75, query: "I don't feel like", trans: "나 ~할 기분이 아니야" },
+      { id: 76, query: "I have trouble", trans: "나 ~하는 데 어려움이 있어" },
+      { id: 77, query: "I have a hard time", trans: "나 ~하느라 고생 중이야" },
+      { id: 78, query: "There's no point in", trans: "~해봐야 소용없어" },
+      { id: 79, query: "There's no need to", trans: "~할 필요 없어" },
+      { id: 80, query: "There's nothing to", trans: "~할 게 아무것도 없어" },
+
+      // [제안과 피드백]
+      { id: 81, query: "Feel free to", trans: "부담 갖지 말고 언제든 ~해" },
+      { id: 82, query: "Make sure you", trans: "반드시 ~하도록 해" },
+      { id: 83, query: "Don't forget to", trans: "~하는 거 잊지 마" },
+      { id: 84, query: "Be sure to", trans: "꼭 ~해" },
+      { id: 85, query: "You might want to", trans: "너 ~하는 게 좋을지도 몰라 (부드러운 제안)" },
+      { id: 86, query: "Have you thought about", trans: "~에 대해 생각해 본 적 있어?" },
+      { id: 87, query: "What do you think about", trans: "~에 대해 어떻게 생각해?" },
+      { id: 88, query: "How do you feel about", trans: "~에 대해 어떻게 느껴?" },
+      { id: 89, query: "I'm struggling with", trans: "나 ~때문에 고전하고 있어" },
+      { id: 90, query: "I'm getting used to", trans: "나 ~에 점점 익숙해지고 있어" },
+
+      // [상태 묘사 및 기타]
+      { id: 91, query: "It's worth", trans: "~할 가치가 있어" },
+      { id: 92, query: "It's no use", trans: "~해봐야 소용없어" },
+      { id: 93, query: "It's time to", trans: "이제 ~할 시간이야" },
+      { id: 94, query: "It's likely that", trans: "아마 ~할 것 같아" },
+      { id: 95, query: "It seems like", trans: "보아하니 ~인 것 같아" },
+      { id: 96, query: "It sounds like", trans: "들어보니 ~인 것 같아" },
+      { id: 97, query: "It looks like", trans: "보아하니 ~인 것 같아" },
+      { id: 98, query: "I'm looking for", trans: "나 ~를 찾고 있어" },
+      { id: 99, query: "I'm looking into", trans: "나 ~를 알아보고/조사하고 있어" },
+      { id: 100, query: "It reminds me of", trans: "이거 보니까 ~가 생각나네" }
+    ];
+
     ];
 
     let currentIndex = 0;
