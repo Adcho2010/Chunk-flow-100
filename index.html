@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Chunk-Flow 100 (v9)</title>
+  <title>Chunk-Flow 100 (v10)</title>
   <style>
     :root {
       --bg: #121212; --card: #1e1e1e; --primary: #4f46e5;
@@ -18,15 +18,16 @@
     .nav-btn { background: #2a2a2a; color: var(--text); border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .nav-title { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
     
-    /* 핵심 수정: 높이를 고정하지 않고 위젯 크기에 맞춰 늘어나도록 수정 */
+    /* 핵심 수정: 자막/컨트롤러가 절대 잘리지 않도록 넉넉한 최소 높이(340px) 고정 부여 */
     .video-wrap {
-      width: 100%; min-height: 260px; height: auto; border-radius: 12px; overflow: hidden;
+      width: 100%; min-height: 340px; border-radius: 12px; overflow: hidden;
       background: #000; margin-bottom: 12px; position: relative; border: 1px solid #333;
     }
+    #yg-widget-0 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
     
     .placeholder-text {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      color: #666; font-size: 0.9rem; width: 100%; text-align: center;
+      color: #666; font-size: 0.95rem; z-index: 1; pointer-events: none; text-align: center;
     }
     
     .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
@@ -56,6 +57,8 @@
     }
     .btn-counter:active { transform: scale(0.98); opacity: 0.9; }
   </style>
+  <!-- YouGlish 스크립트를 정석대로 최상단에서 로드 -->
+  <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
 </head>
 <body>
 
@@ -65,12 +68,13 @@
     <button class="nav-btn" onclick="nextChunk()">다음 ▶</button>
   </div>
 
-  <div class="video-wrap" id="videoContainer">
-    <div class="placeholder-text">재생 버튼을 눌러주세요</div>
+  <div class="video-wrap">
+    <div class="placeholder-text" id="placeholder">▶ 아래 노란색 재생 버튼을 눌러주세요</div>
+    <div id="yg-widget-0"></div>
   </div>
 
   <div class="action-row">
-    <button class="btn-action btn-play" onclick="injectYouGlish()">▶ 재생 (영상 찾기)</button>
+    <button class="btn-action btn-play" onclick="playVideo()">▶ 재생 (영상 찾기)</button>
     <button class="btn-action" onclick="nextVideo()">🔄 다른 영상</button>
   </div>
 
@@ -104,6 +108,28 @@
     ];
 
     let currentIndex = 0;
+    let widget = null;
+
+    // API 스크립트가 로드되면 자동으로 빈 플레이어(껍데기)를 세팅해 둡니다.
+    function onYouglishAPIReady() {
+      widget = new YG.Widget("yg-widget-0", {
+        width: "100%",
+        components: 73, // 자막과 컨트롤러 강제 활성화 (iOS 오류 방지)
+        events: {
+          'onFetchDone': function(e) { if(e.totalResult === 0) alert("영상이 없습니다."); }
+        }
+      });
+    }
+
+    // 유저가 버튼을 눌렀을 때만 fetch(검색)를 실행하여 애플의 보안 정책을 우회합니다.
+    function playVideo() {
+      document.getElementById('placeholder').style.display = 'none';
+      if (widget) {
+        widget.fetch(chunkDB[currentIndex].query, "english", "us");
+      } else {
+        alert("플레이어를 로딩 중입니다. 1~2초 후 다시 눌러주세요.");
+      }
+    }
 
     function initUI() {
       const data = chunkDB[currentIndex];
@@ -111,44 +137,16 @@
       document.getElementById('chunkText').innerText = data.query;
       document.getElementById('chunkText').classList.remove('hidden');
       document.getElementById('transArea').innerHTML = data.trans;
-      
-      document.getElementById('videoContainer').innerHTML = '<div class="placeholder-text">재생 버튼을 눌러주세요</div>';
       updateCounterUI();
-    }
-
-    function injectYouGlish() {
-      const data = chunkDB[currentIndex];
-      const container = document.getElementById('videoContainer');
-      container.innerHTML = ''; 
-
-      const ygLink = document.createElement('a');
-      ygLink.id = 'yg-widget-0';
-      ygLink.className = 'youglish-widget';
-      ygLink.setAttribute('data-query', data.query);
-      ygLink.setAttribute('data-lang', 'english');
-      ygLink.setAttribute('data-zones', 'us');
-      ygLink.setAttribute('data-components', '73'); 
-      ygLink.setAttribute('data-bkgColor', 'theme_dark');
-      ygLink.setAttribute('data-width', '100%'); // 가로 폭 꽉 차게 설정
-      ygLink.rel = 'nofollow';
-      ygLink.href = 'https://youglish.com';
-      ygLink.innerText = '로딩 중...';
       
-      container.appendChild(ygLink);
-
-      const script = document.createElement('script');
-      script.src = 'https://youglish.com/public/emb/widget.js';
-      script.async = true;
-      script.charset = 'utf-8';
-      container.appendChild(script);
+      // 데이(Day)가 넘어가면 텍스트만 업데이트하고, 영상은 유저가 원할 때(버튼 누를 때) 자동으로 바뀝니다.
+      if (widget && document.getElementById('placeholder').style.display === 'none') {
+        widget.fetch(data.query, "english", "us");
+      }
     }
 
     function nextVideo() {
-      if (typeof YG !== 'undefined' && YG.getWidget('yg-widget-0')) {
-        YG.getWidget('yg-widget-0').next();
-      } else {
-        alert("먼저 재생 버튼을 눌러 영상을 불러와주세요.");
-      }
+      if (widget) widget.next();
     }
 
     function addCountAndReplay() {
@@ -160,10 +158,7 @@
         localStorage.setItem(`chunk_count_day_${data.id}`, currentCount);
         updateCounterUI(currentCount);
       }
-      
-      if (typeof YG !== 'undefined' && YG.getWidget('yg-widget-0')) {
-        YG.getWidget('yg-widget-0').replay();
-      }
+      if (widget) widget.replay();
     }
 
     function updateCounterUI(count) {
